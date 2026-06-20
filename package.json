@@ -1,0 +1,45 @@
+{
+  "name": "pebble-weather-graph-async",
+  "author": "simmsb",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.12.0",
+    "@rebble/clay": "^1.0.10",
+    "pebble-fctx": "^1.6.1"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.71.0",
+    "@bufbuild/protoc-gen-es": "^2.12.0",
+    "pkts": "^0.3.0-beta.1"
+  },
+  "scripts": {
+    "build": "pkts build"
+  },
+  "pebble": {
+    "displayName": "pebble-weather-graph",
+    "uuid": "97d6043a-2489-4c2c-a9ba-2ca68b57544f",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "WEATHER_REQUEST",
+      "WEATHER_UPDATE",
+      "SETTING_ACCENT_COLOR"
+    ],
+    "resources": {
+    },
+    "capabilities": [
+      "location",
+      "configurable"
+    ]
+  }
+}

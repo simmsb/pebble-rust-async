@@ -5,6 +5,8 @@ let
   cargo-pebble = cargoNix inputs.cargo-pebble "pebble-cli";
 in
 {
+  stdenv = pkgs.stdenvNoCC;
+
   overlays = [
     inputs.pebble.overlays.default
   ];
@@ -19,21 +21,37 @@ in
     pebble-tool
     pebble-toolchain-bin
     python3
-    cargo-binutils
+    libiconv
     clang
+    # cargo-binutils
   ];
 
-  env.PEBBLE_EXTRA_PATH = with pkgs; lib.makeBinPath [
-    pebble-qemu
-    pebble-toolchain-bin
-  ];
+  env = {
+    PEBBLE_EXTRA_PATH = with pkgs; lib.makeBinPath [
+      pebble-qemu
+      pebble-toolchain-bin
+    ];
 
-  env.PEBBLE_EMULATOR = "emery";
+    PEBBLE_EMULATOR = "emery";
 
-  languages.rust = {
-    enable = true;
-    channel = "nightly";
-    targets = [ "thumbv7m-none-eabi" ];
-    components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" "rust-src" "llvm-tools" ];
+    # needed on darwin, might need an equivalent on linux?
+    # needed so that @rpath/libLLVM.dylib resolves
+    # DYLD_FALLBACK_LIBRARY_PATH="${config.languages.rust.toolchainPackage}/lib";
   };
+
+  enterShell = ''
+    export CC="arm-none-eabi-gcc"
+    export LIBRARY_PATH=$LIBRARY_PATH:${pkgs.libiconv}/lib;
+  '';
+
+  # export DYLD_FALLBACK_LIBRARY_PATH="${config.languages.rust.toolchainPackage}/lib"
+
+  unsetEnvVars = ["CC" "CC_FOR_BUILD"];
+
+  # languages.rust = {
+  #   enable = true;
+  #   channel = "nightly";
+  #   targets = [ "thumbv7m-none-eabi" ];
+  #   components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" "rust-src" ];
+  # };
 }

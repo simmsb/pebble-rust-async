@@ -1,0 +1,43 @@
+cargo-features = ["panic-immediate-abort"]
+
+[package]
+name = "pebble-weather-graph-async"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+# pebble-sys = { git = "https://github.com/Peatral/pebble-rust", version = "0.1.0", default-features = false }
+# pebble-sys = { path = "../pebble-rust/pebble-sys", version = "0.1.0", default-features = false }
+
+[build-dependencies]
+bindgen = "0.72.1"
+doxygen-bindgen = "0.1.3"
+doxygen-rs = "0.4.2"
+# pebble-build = { git = "https://github.com/Peatral/pebble-rust", version = "0.1.0", default-features = false }
+
+[profile.dev]
+codegen-units = 1
+debug = 2
+debug-assertions = true
+incremental = false
+lto = 'thin' # true/fat breaks defmt?
+opt-level = 's'
+overflow-checks = true
+# panic = 'unwind'
+# panic = 'immediate-abort'
+panic = 'abort'
+
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 2
+overflow-checks = false
+# panic = 'unwind'
+panic = 'immediate-abort'
+strip = true

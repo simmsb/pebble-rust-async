@@ -7,8 +7,6 @@ edition = "2024"
 
 [lib]
 crate-type = ["staticlib"]
-
-[dependencies]
 # pebble-sys = { git = "https://github.com/Peatral/pebble-rust", version = "0.1.0", default-features = false }
 # pebble-sys = { path = "../pebble-rust/pebble-sys", version = "0.1.0", default-features = false }
 
@@ -36,8 +34,31 @@ debug = 2
 debug-assertions = false
 incremental = false
 lto = 'fat'
-opt-level = 2
+opt-level = 'z'
 overflow-checks = false
-# panic = 'unwind'
-panic = 'immediate-abort'
+panic = 'abort'
+# panic = 'immediate-abort'
 strip = true
+
+[features]
+default = ["logging"]
+logging = []
+
+[dependencies]
+embassy-executor = { version = "0.10.0", default-features = false, features = ["nightly", "embassy-time-driver"] }
+embassy-time-driver = { version = "0.2.2" }
+embassy-time-queue-utils = "0.3.2"
+embassy-time = { version = "0.5.1", features = ["tick-hz-1_000"] }
+embassy-sync = "0.8.0"
+embassy-futures = "0.1.2"
+heapless = "0.9.3"
+higher-kinded-types = "0.3.0"
+
+[patch.crates-io]
+embassy-executor = { git = "https://github.com/embassy-rs/embassy" }
+embassy-futures = { git = "https://github.com/embassy-rs/embassy" }
+embassy-sync = { git = "https://github.com/embassy-rs/embassy" }
+embassy-time = { git = "https://github.com/embassy-rs/embassy" }
+embassy-time-driver = { git = "https://github.com/embassy-rs/embassy" }
+embassy-time-queue-utils = { git = "https://github.com/embassy-rs/embassy" }
+embassy-executor-timer-queue = { git = "https://github.com/embassy-rs/embassy" }

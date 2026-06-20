@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-use bindgen::callbacks::ParseCallbacks;
+use bindgen::{EnumVariation, callbacks::ParseCallbacks};
 
 fn get_pebble_include_path(platform: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let output = Command::new("pebble")
@@ -132,6 +132,8 @@ fn main() {
         .clang_arg("-fparse-all-comments")
         .clang_arg("-fretain-comments-from-system-headers")
         .generate_comments(true)
+        .default_enum_style(EnumVariation::Rust { non_exhaustive: false })
+        .prepend_enum_name(false)
         .generate()
         .expect("Unable to generate bindings");
 

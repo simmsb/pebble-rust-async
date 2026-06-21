@@ -18,6 +18,7 @@ class cargo_staticlib(stlink_task):
         env = dict(os.environ)
         env['PEBBLE_INCLUDE_DIRS'] = self.cargo_include_dirs
         env['PEBBLE_CFLAGS'] = self.cargo_cflags
+        env['RUSTFLAGS'] = self.cargo_rustflags
         return self.exec_command(self.cargo_cmd, cwd=self.cargo_cwd, env=env)
 
     def keyword(self):
@@ -33,6 +34,7 @@ def process_cargo_staticlib(tg):
     tsk.cargo_cwd = tg.cargo_cwd
     tsk.cargo_include_dirs = tg.cargo_include_dirs
     tsk.cargo_cflags = tg.cargo_cflags
+    tsk.cargo_rustflags = tg.cargo_rustflags
     tg.link_task = tsk
     tg.target = tg.cargo_libname
 
@@ -66,6 +68,8 @@ def _declare_rust_staticlib(ctx, platform, rust_target, libname='pebble_weather_
         cargo_cwd=rust_dir.abspath(),
         cargo_include_dirs=':'.join(include_dirs),
         cargo_cflags=' '.join(ctx.env.CFLAGS),
+        # Needed or the built program will be wonky, seems to cause it to not call functions correctly?
+        cargo_rustflags='-C relocation-model=pie -C codegen-units=1 -C link-arg=--gc-sections -C link-arg=--build-id=sha1 -C link-arg=--emit-relocs -C debuginfo=2',
         cargo_cmd=['cargo', 'build', '--release',
                    '--target', rust_target,
                    '--target-dir', target_dir.abspath()],
@@ -90,6 +94,11 @@ def build(ctx):
     cached_env = ctx.env
     for platform in ctx.env.TARGET_PLATFORMS:
         ctx.env = ctx.all_envs[platform]
+
+        # silence some warnings
+        ctx.env.LINKFLAGS += ["-z", "noexecstack"]
+        ctx.env.LINKFLAGS += ["-Wl,--no-warn-rwx-segments"]
+
         ctx.set_group(ctx.env.PLATFORM_NAME)
         app_elf = '{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
 

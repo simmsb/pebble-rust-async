@@ -15,7 +15,7 @@ impl<T> SingleCoreCell<T> {
     //     self.value.get()
     // }
 
-    pub fn with_mut<'a>(&'a self, cb: impl FnOnce(&'a mut T)) {
+    pub unsafe fn with_mut<'a>(&'a self, cb: impl FnOnce(&'a mut T)) {
         unsafe {
             cb(self.value.get().as_mut_unchecked())
         }

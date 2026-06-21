@@ -38,7 +38,6 @@ opt-level = 'z'
 overflow-checks = false
 panic = 'abort'
 # panic = 'immediate-abort'
-strip = true
 
 [features]
 default = ["logging"]
@@ -51,8 +50,9 @@ embassy-time-queue-utils = "0.3.2"
 embassy-time = { version = "0.5.1", features = ["tick-hz-1_000"] }
 embassy-sync = "0.8.0"
 embassy-futures = "0.1.2"
-heapless = "0.9.3"
+heapless = { version = "0.9.3", features = ["ufmt"] }
 higher-kinded-types = "0.3.0"
+ufmt = { version = "0.2.0", default-features = false }
 
 [patch.crates-io]
 embassy-executor = { git = "https://github.com/embassy-rs/embassy" }

@@ -19,6 +19,10 @@ embassy_time_driver::time_driver_impl!(static DRIVER: TmrDriver = TmrDriver {
 
 unsafe extern "C" fn timer_callback(_data: *mut core::ffi::c_void) {
     DRIVER.trigger_alarm();
+
+    unsafe {
+        crate::executor::poll_executor();
+    }
 }
 
 impl TmrDriver {
@@ -74,13 +78,15 @@ impl TmrDriver {
     }
 
     fn trigger_alarm(&self) {
-        self.queue.with_mut(|q| {
-            let mut when = q.next_expiration(self.now());
+        unsafe {
+            self.queue.with_mut(|q| {
+                let mut when = q.next_expiration(self.now());
 
-            while !self.set_alarm(when) {
-                when = q.next_expiration(self.now());
-            }
-        });
+                while !self.set_alarm(when) {
+                    when = q.next_expiration(self.now());
+                }
+            });
+        }
     }
 }
 
@@ -100,14 +106,16 @@ impl Driver for TmrDriver {
     }
 
     fn schedule_wake(&self, at: u64, waker: &core::task::Waker) {
-        self.queue.with_mut(|q| {
-            if q.schedule_wake(at, waker) {
-                let mut when = q.next_expiration(self.now());
+        unsafe {
+            self.queue.with_mut(|q| {
+                if q.schedule_wake(at, waker) {
+                    let mut when = q.next_expiration(self.now());
 
-                while !self.set_alarm(when) {
-                    when = q.next_expiration(self.now());
+                    while !self.set_alarm(when) {
+                        when = q.next_expiration(self.now());
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 }

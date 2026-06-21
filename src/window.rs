@@ -17,9 +17,13 @@ unsafe extern "C" fn window_handler_wake(window: *mut crate::bindings::Window) {
     if let Some(waker) = unsafe { waker.as_ref() } {
         waker.wake_by_ref();
     }
+
+    unsafe { crate::executor::poll_executor(); }
 }
 
-unsafe extern "C" fn window_handler_noop(_window: *mut crate::bindings::Window) {}
+unsafe extern "C" fn window_handler_noop(_window: *mut crate::bindings::Window) {
+    unsafe { crate::executor::poll_executor(); }
+}
 
 pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)) -> Option<()> {
     let p = unsafe { crate::bindings::window_create() };
@@ -30,6 +34,8 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
     });
 
     let mut has_started: bool = false;
+
+    crate::debug!("With window start");
 
     // wait for window to start
     poll_fn(|cx| unsafe {
@@ -56,6 +62,8 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
         }
     })
     .await;
+
+    crate::debug!("With window created");
 
     let mut has_started: bool = false;
     let wait_for_stop = poll_fn(|cx| unsafe {
@@ -89,6 +97,8 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
         }
     })
     .await;
+
+    crate::debug!("With window destroy");
 
     Some(())
 }

@@ -13,7 +13,6 @@ in
 
   packages = with pkgs; [
     cargo-pebble
-    flip-link
     cargo-show-asm
     cargo-bloat
     nodejs

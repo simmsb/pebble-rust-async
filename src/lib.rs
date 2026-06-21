@@ -5,9 +5,9 @@
 #![feature(async_fn_traits)]
 
 pub mod executor;
+pub mod log_impl;
 pub mod single_core_cell;
 pub mod time_driver;
-pub mod log_impl;
 pub mod window;
 
 pub mod bindings {
@@ -18,17 +18,28 @@ pub mod bindings {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn main() {
-    // log_impl::init();
     crate::info!("Main called!");
+
+    // unsafe {
+    //     let w = bindings::window_create();
+    //     bindings::window_set_background_color(w, bindings::GColor8 { argb: 0b11110011 });
+    //     bindings::window_stack_push(w, true);
+    // }
+
     executor::init();
     executor::run(init);
+
+    crate::info!("Main leaving!");
 }
 
 #[embassy_executor::task]
 async fn async_main() {
+    crate::info!("Async main called!");
     window::with_window(async |h| {
         core::future::pending::<()>().await;
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
 }
 
 fn init(s: embassy_executor::Spawner) {
@@ -57,6 +68,8 @@ extern "C" fn trigger_panic() -> ! {
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    let msg = info.message().as_str().unwrap_or("<no message>");
+    crate::error!("Panic! {}", msg);
     trigger_panic();
 }

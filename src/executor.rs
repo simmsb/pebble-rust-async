@@ -38,6 +38,10 @@ impl Executor {
     }
 
     pub fn run() {
+        // do one poll to kick things off
+        unsafe {
+            poll_executor();
+        }
         // we don't actually run the executor, instead any registered callbacks will poll the executor for us.
         unsafe {
             crate::bindings::app_event_loop();
@@ -46,7 +50,7 @@ impl Executor {
 }
 
 pub fn init() {
-    EXECUTOR.with_mut(|e| *e = Some(Executor::new()));
+    unsafe { EXECUTOR.with_mut(|e| *e = Some(Executor::new())) };
 }
 
 pub fn run(init: impl FnOnce(Spawner)) {
@@ -66,10 +70,14 @@ unsafe fn make_static<T>(t: &mut T) -> &'static mut T {
     unsafe { ::core::mem::transmute(t) }
 }
 
+// unsafe, caller must ensure that this is not called re-entrantly
+#[inline(never)]
 pub unsafe fn poll_executor() {
     unsafe {
         EXECUTOR.with_mut(|e| {
-            let s = make_static(e.as_mut().unwrap());
+            crate::trace!("Executor poll, addr: {:?}", e as *mut _);
+            let Some(e) = e.as_mut() else { return };
+            let s: &mut Executor = make_static(e);
             make_static(s).poll();
         });
     }

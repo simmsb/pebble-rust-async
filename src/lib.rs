@@ -2,13 +2,14 @@
 #![feature(integer_casts)]
 #![feature(integer_widen_truncate)]
 #![feature(impl_trait_in_assoc_type)]
-#![feature(async_fn_traits)]
 
 pub mod executor;
 pub mod log_impl;
 pub mod single_core_cell;
 pub mod time_driver;
 pub mod window;
+mod colour_impls;
+mod layer;
 
 pub mod bindings {
     #![allow(warnings)]
@@ -35,7 +36,8 @@ pub extern "C" fn main() {
 #[embassy_executor::task]
 async fn async_main() {
     crate::info!("Async main called!");
-    window::with_window(async |h| {
+    window::with_window(async |mut h| {
+        h.set_background_colour(bindings::GColor8::RED);
         core::future::pending::<()>().await;
     })
     .await

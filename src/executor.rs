@@ -91,7 +91,7 @@ pub unsafe fn poll_executor() {
     } else {
         unsafe {
             EXECUTOR.with_mut(|e| {
-                crate::trace!("Executor poll, addr: {:?}", e as *mut _);
+                // crate::trace!("Executor poll, addr: {:?}", e as *mut _);
                 let Some(e) = e.as_mut() else { return };
                 let s: &mut Executor = make_static(e);
                 make_static(s).poll();

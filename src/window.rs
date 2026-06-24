@@ -1,10 +1,4 @@
-use core::{
-    cell::Cell,
-    future::poll_fn,
-    marker::PhantomData,
-    ptr::NonNull,
-    task::Poll,
-};
+use core::{cell::Cell, future::poll_fn, marker::PhantomData, ptr::NonNull, task::Poll};
 
 use embassy_executor::raw::TaskRef;
 
@@ -79,8 +73,6 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
 
     let mut has_started: bool = false;
 
-    crate::debug!("With window start");
-
     // wait for window to start
     poll_fn(|_cx| unsafe {
         if !has_started {
@@ -111,8 +103,6 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
         }
     })
     .await;
-
-    crate::debug!("With window created");
 
     pin_init::stack_pin_init!(let window_info = WindowInfo {
         waker: task_ref,
@@ -160,8 +150,6 @@ pub async fn with_window(f: impl for<'active> AsyncFnOnce(WindowHandle<'active>)
     unsafe {
         bindings::window_destroy(p.as_ptr());
     }
-
-    crate::debug!("With window destroy");
 
     Some(())
 }

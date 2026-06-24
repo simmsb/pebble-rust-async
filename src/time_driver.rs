@@ -16,6 +16,7 @@ embassy_time_driver::time_driver_impl!(static DRIVER: TmrDriver = TmrDriver {
 });
 
 unsafe extern "C" fn timer_callback(_data: *mut core::ffi::c_void) {
+    DRIVER.timer_handle.store(core::ptr::null_mut(), Ordering::SeqCst);
     DRIVER.trigger_alarm();
 
     unsafe {

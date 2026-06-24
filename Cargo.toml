@@ -53,7 +53,7 @@ embassy-futures = "0.1.2"
 heapless = { version = "0.9.3", features = ["ufmt"] }
 higher-kinded-types = "0.3.0"
 ufmt = { version = "0.2.0", default-features = false }
-pin-init = { git = "https://github.com/Rust-for-Linux/pin-init", version = "0.3.0", default-features = false }
+pin-init = { git = "https://github.com/Rust-for-Linux/pin-init", version = "0.3.0", default-features = false, features = ["unsafe-pinned"] }
 
 [patch.crates-io]
 ufmt = { git = "https://github.com/simmsb/ufmt" }

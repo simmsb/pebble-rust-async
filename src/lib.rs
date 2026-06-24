@@ -3,12 +3,19 @@
 #![feature(integer_widen_truncate)]
 #![feature(impl_trait_in_assoc_type)]
 
+use heapless::CString;
 use pin_init::stack_pin_init;
 
-mod colour_impls;
+use self::{
+    bindings::GTextAlignment,
+    layer::{Layer, TextLayer},
+};
+
+pub mod colour;
 pub mod executor;
+pub mod font;
 pub mod graphics_context;
-mod layer;
+pub mod layer;
 pub mod log_impl;
 pub mod single_core_cell;
 pub mod time_driver;
@@ -51,15 +58,27 @@ async fn async_main() {
             stack_pin_init! {
                 let child_layer = h
                     .root_layer()
-                    .new_child(window_bounds)
+                    .new_child::<Layer>(window_bounds)
                     .unwrap()
-                    .with_callback(|_layer, _ctx| {
+                    .with_update_proc(|_layer, _ctx| {
                         crate::debug!("Hello from layer callback: {}", foo);
                         foo += 1;
                     })
             };
 
-            embassy_time::Timer::after_secs(1).await;
+            let mut text_layer = child_layer
+                .new_child::<TextLayer>(child_layer.bounds())
+                .unwrap();
+            text_layer.set_text_alignment(GTextAlignment::GTextAlignmentCenter);
+
+            let mut text_content: CString<64>;
+            for i in 0..10 {
+                text_content = CString::<64>::new();
+                let _ = ufmt::uwrite!(&mut text_content, "{}", i);
+                let _guard = text_layer.set_text(&text_content);
+
+                embassy_time::Timer::after_secs(1).await;
+            }
 
             crate::info!("Child bounds: {:?}", child_layer.bounds());
         }

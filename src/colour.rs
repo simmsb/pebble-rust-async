@@ -1,4 +1,4 @@
-use crate::bindings::GColor;
+pub use crate::bindings::GColor;
 
 impl GColor {
     pub const fn from_rgb(r: u8, g: u8, b: u8) -> GColor {

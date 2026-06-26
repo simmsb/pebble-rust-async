@@ -5,10 +5,12 @@ use crate::{
     font::Font,
 };
 
-pub struct TextLayer<'a> {
+use super::{AsChildLayer, IsLayer, LayerMut, LayerRef};
+
+pub struct TextLayer<'layer> {
     pub(crate) inner: NonNull<bindings::TextLayer>,
 
-    pub(crate) _phantom: PhantomData<&'a ()>,
+    pub(crate) _phantom: PhantomData<&'layer ()>,
 }
 
 impl<'layer> TextLayer<'layer> {
@@ -97,7 +99,7 @@ impl<'layer> TextLayer<'layer> {
     }
 }
 
-impl<'a> Drop for TextLayer<'a> {
+impl<'layer> Drop for TextLayer<'layer> {
     fn drop(&mut self) {
         unsafe {
             bindings::text_layer_destroy(self.inner.as_ptr());
@@ -118,5 +120,25 @@ impl<'text, 'layer> Drop for SetTextGuard<'text, 'layer> {
         unsafe {
             bindings::text_layer_set_text(self.layer.as_ptr(), c"".as_ptr());
         }
+    }
+}
+
+impl<'a> AsChildLayer<'a> for TextLayer<'a> {
+    type Parameters = GRect;
+
+    fn new_unparented(create_params: Self::Parameters) -> Option<Self> {
+        Self::new(create_params)
+    }
+}
+
+impl<'a> IsLayer for TextLayer<'a> {
+    fn layer(&self) -> LayerRef<'a> {
+        let ptr = unsafe { bindings::text_layer_get_layer(self.inner.as_ptr()) };
+        LayerRef::from_ptr(NonNull::new(ptr).unwrap())
+    }
+
+    fn layer_mut(&mut self) -> LayerMut<'a> {
+        let ptr = unsafe { bindings::text_layer_get_layer(self.inner.as_ptr()) };
+        LayerMut::from_ptr(NonNull::new(ptr).unwrap())
     }
 }

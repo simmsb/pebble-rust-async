@@ -8,7 +8,7 @@ use pin_init::stack_pin_init;
 
 use self::{
     bindings::GTextAlignment,
-    layer::{Layer, TextLayer},
+    layer::{Layer, StatusBarLayer, TextLayer},
 };
 
 pub mod colour;
@@ -17,9 +17,12 @@ pub mod font;
 pub mod graphics_context;
 pub mod layer;
 pub mod log_impl;
+pub mod shapes;
 pub mod single_core_cell;
 pub mod time_driver;
 pub mod window;
+
+pub use layer::IsLayer as _;
 
 pub mod bindings {
     #![allow(warnings)]
@@ -55,10 +58,15 @@ async fn async_main() {
         let mut foo = 123;
 
         {
+            let status_bar = h.root_layer().new_child::<StatusBarLayer>(()).unwrap();
+
+            let remaining_space =
+                window_bounds.shrink_to_avoid(status_bar.layer().bounds(), shapes::Edge::Top, 0);
+
             stack_pin_init! {
                 let child_layer = h
                     .root_layer()
-                    .new_child::<Layer>(window_bounds)
+                    .new_child::<Layer>(remaining_space)
                     .unwrap()
                     .with_update_proc(|_layer, _ctx| {
                         crate::debug!("Hello from layer callback: {}", foo);
@@ -82,6 +90,8 @@ async fn async_main() {
 
             crate::info!("Child bounds: {:?}", child_layer.bounds());
         }
+
+        // layers now destroyed, app should show just the window with its red background
 
         core::future::pending::<()>().await;
     })

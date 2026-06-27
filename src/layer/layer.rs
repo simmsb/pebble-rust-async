@@ -31,7 +31,6 @@ pub(crate) unsafe extern "C" fn layer_callback(
 // TODO: LayerRef/LayerMut might be completely wrong here. It might not make any
 // sense to have the separation.
 
-
 /// As [Layer], but isn't owned and therefore doesn't destroy the layer on drop.
 pub struct LayerRef<'layer> {
     pub(crate) inner: core::mem::ManuallyDrop<Layer<'layer>>,
@@ -114,8 +113,7 @@ impl<'layer, F> DerefMut for LayerWithUpdateProc<'layer, F> {
 }
 
 pub trait LayerUpdateProc<'env> = for<'cb> FnMut(LayerMut<'cb>, GContext<'cb>) + 'env;
-pub(crate) type LayerUpdateProcVTable =
-    *mut dyn LayerUpdateProc<'static>;
+pub(crate) type LayerUpdateProcVTable = *mut dyn LayerUpdateProc<'static>;
 
 impl<'layer> Layer<'layer> {
     pub(crate) fn new(frame: GRect) -> Option<Self> {
@@ -131,7 +129,10 @@ impl<'layer> Layer<'layer> {
         }
     }
 
-    pub fn new_child<'child: 'layer, LayerT>(&self, create_params: LayerT::Parameters) -> Option<LayerT>
+    pub fn new_child<'child: 'layer, LayerT>(
+        &self,
+        create_params: LayerT::Parameters,
+    ) -> Option<LayerT>
     where
         LayerT: AsChildLayer<'child>,
     {
@@ -189,8 +190,7 @@ impl<'layer> Layer<'layer> {
             unsafe {
                 let project = p.project();
 
-                let callback_vtable = project.callback
-                    as *mut dyn LayerUpdateProc<'layer>;
+                let callback_vtable = project.callback as *mut dyn LayerUpdateProc<'layer>;
 
                 // N.B. this erases the lifetimes of the closure captures
                 let callback_vtable_static =

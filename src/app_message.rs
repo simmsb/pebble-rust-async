@@ -11,7 +11,9 @@ use crate::{
     dictionary::{DictionaryRef, DictionaryWriter},
 };
 
-pub struct AppMessages;
+pub struct AppMessages {
+    pub(crate) _private: (),
+}
 
 pub trait AppMessageInboxReceivedHandler<'env> =
     for<'message> FnMut(DictionaryRef<'message>) + 'env;
@@ -50,7 +52,7 @@ pub struct AppMessagesHandle<'handle, FInboxReceived, FInboxDropped, FOutboxSent
     #[pin]
     _pin_phantom: PhantomPinned,
 
-    _phantom: PhantomData<&'handle ()>,
+    _phantom: PhantomData<&'handle mut ()>,
 }
 
 impl<'handle, FInboxReceived, FInboxDropped, FOutboxSent, FOutboxFailed>
@@ -121,7 +123,7 @@ impl AppMessages {
     /// your stack frame.
     #[must_use = "Callbacks are deregistered and dropped when [AppMessagesHandle] is dropped."]
     pub fn listen<'handle, FInboxReceived, FInboxDropped, FOutboxSent, FOutboxFailed>(
-        &mut self,
+        &'handle mut self,
         size_inbound: u32,
         size_outbound: u32,
         inbox_received: FInboxReceived,
@@ -137,7 +139,7 @@ impl AppMessages {
         FOutboxSent: for<'message> FnMut(DictionaryRef<'message>) + 'handle,
         FOutboxFailed: for<'message> FnMut(DictionaryRef<'message>, AppMessageResult) + 'handle,
     {
-        pin_init::pin_init!(&this in AppMessagesHandle {
+        pin_init::pin_init!{&this in AppMessagesHandle {
             callback_inbox_received: inbox_received,
             callback_inbox_dropped: inbox_dropped,
             callback_outbox_sent: outbox_sent,
@@ -156,7 +158,7 @@ impl AppMessages {
 
             _pin_phantom: PhantomPinned,
             _phantom: PhantomData,
-        })
+        }}
         .pin_chain(move |p| {
             let project = p.project();
 

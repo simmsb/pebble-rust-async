@@ -143,11 +143,13 @@ fn main() {
     }
 
     let mut clang_args = pebble_include_args();
-    let mut wrapper = "#include <pebble.h>";
+    let mut wrapper = "#include <pebble.h>\n\
+                            ";
     if clang_args.is_empty() {
         wrapper = "#include <stdint.h>\n\
                    typedef int32_t time_t;\n\
-                   #include <pebble.h>";
+                   #include <pebble.h>
+                  ";
         let emulator = env::var("PEBBLE_EMULATOR").unwrap();
         let pebble_include_path = get_pebble_include_path(&emulator).unwrap();
         println!("cargo:rerun-if-changed={}", pebble_include_path.display());

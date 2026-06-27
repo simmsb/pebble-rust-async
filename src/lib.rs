@@ -3,6 +3,7 @@
 #![feature(integer_widen_truncate)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(trait_alias)]
+#![feature(atomic_ptr_null)]
 
 use heapless::CString;
 use pin_init::stack_pin_init;
@@ -15,6 +16,7 @@ use self::{
 pub mod app_message;
 pub mod colour;
 pub mod dictionary;
+pub mod events;
 pub mod executor;
 pub mod font;
 pub mod graphics_context;
@@ -23,6 +25,7 @@ pub mod log_impl;
 pub mod shapes;
 pub mod single_core_cell;
 pub mod time_driver;
+pub mod utils;
 pub mod window;
 
 pub use layer::IsLayer as _;
@@ -51,9 +54,13 @@ pub extern "C" fn main() {
 
 #[embassy_executor::task]
 async fn async_main() {
+    async_main_().await;
+}
+
+async fn async_main_() {
     crate::info!("Async main called!");
     window::with_window(async |mut h| {
-        let app_messages = &mut app_message::AppMessages;
+        let app_messages = &mut app_message::AppMessages { _private: () };
         stack_pin_init!(let app_messages = app_messages.listen(
             1024,
             512,
@@ -62,6 +69,7 @@ async fn async_main() {
             |_| {},
             |_, _| {},
         ));
+
 
         h.set_background_colour(bindings::GColor8::RED);
 
@@ -87,7 +95,18 @@ async fn async_main() {
                     })
             };
 
-            let mut text_layer = child_layer
+
+            let mut num_taps: u32 = 0;
+
+            let mut accelerometer_service =
+                events::accelerometer::AccelerometerService { _private: () }.enable();
+
+            stack_pin_init!(let tap_events = accelerometer_service.subscribe_to_tap_service(|axis, dir| {
+                num_taps += 1;
+                crate::info!("Tap! {}, {:?}, {}", num_taps, axis, dir);
+            }));
+
+            let mut text_layer: TextLayer<'_> = child_layer
                 .new_child::<TextLayer>(child_layer.bounds())
                 .unwrap();
             text_layer.set_text_alignment(GTextAlignment::GTextAlignmentCenter);
@@ -100,11 +119,13 @@ async fn async_main() {
 
                 embassy_time::Timer::after_secs(1).await;
 
-                app_messages.send(|d| {
-                    d.u16(10001, 1234)?;
+                app_messages
+                    .send(|d| {
+                        d.u16(10001, 1234)?;
 
-                    Ok(())
-                }).unwrap();
+                        Ok(())
+                    })
+                    .unwrap();
             }
 
             crate::info!("Child bounds: {:?}", child_layer.bounds());

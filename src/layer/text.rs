@@ -110,6 +110,7 @@ impl<'layer> Drop for TextLayer<'layer> {
 /// A guard that represents the lifetime of a string passed to [TextLayer::set_text].
 ///
 /// Once dropped, the text in the text layer is set to `""` and the `'text` lifetime is freed up.
+#[must_use = "Content is set back to an empty string when the returned guard is dropped"]
 pub struct SetTextGuard<'text, 'layer> {
     pub(crate) layer: NonNull<bindings::TextLayer>,
     pub(crate) _phantom: PhantomData<(&'text (), &'layer ())>,

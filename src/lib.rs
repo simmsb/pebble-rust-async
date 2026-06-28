@@ -4,12 +4,14 @@
 #![feature(impl_trait_in_assoc_type)]
 #![feature(trait_alias)]
 #![feature(atomic_ptr_null)]
+#![feature(type_alias_impl_trait)]
 
+use futures::StreamExt as _;
 use heapless::CString;
 use pin_init::stack_pin_init;
 
 use self::{
-    bindings::GTextAlignment,
+    bindings::{GTextAlignment, TimeUnits},
     layer::{Layer, StatusBarLayer, TextLayer},
 };
 
@@ -76,9 +78,17 @@ async fn async_main_() {
         let window_bounds = h.root_layer().bounds();
         crate::info!("Window bounds: {:?}", window_bounds);
 
+        stack_pin_init!(let timer_minutes = events::tick::listen(TimeUnits::MINUTE_UNIT, |time, _| {
+            crate::info!("minute timer tick: {:?}", time);
+        }));
+
         let mut foo = 123;
 
         {
+            stack_pin_init!(let timer_seconds = events::tick::listen(TimeUnits::SECOND_UNIT, |time, _| {
+                crate::info!("second timer tick: {:?}", time);
+            }));
+
             let status_bar = h.root_layer().new_child::<StatusBarLayer>(()).unwrap();
 
             let remaining_space =
@@ -129,6 +139,11 @@ async fn async_main_() {
             }
 
             crate::info!("Child bounds: {:?}", child_layer.bounds());
+        }
+
+        stack_pin_init!(let timer_seconds_stream = events::tick::stream(TimeUnits::SECOND_UNIT));
+        while let Some(t) = timer_seconds_stream.next().await {
+            crate::info!("second tick stream: {}", t.secs);
         }
 
         // layers now destroyed, app should show just the window with its red background

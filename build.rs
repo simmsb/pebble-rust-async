@@ -172,6 +172,7 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .parse_callbacks(Box::new(ProcessComments))
         .parse_callbacks(Box::new(AddDerives))
+        .bitfield_enum("TimeUnits")
         .clang_args(&["-E", "-CC"])
         .clang_arg("--target=arm-none-eabi")
         .clang_arg("-Wno-macro-redefined")

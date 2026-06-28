@@ -33,6 +33,7 @@ pub(crate) type AppMessageOutboxSentHandlerVTable = dyn AppMessageOutboxSentHand
 
 pub(crate) type AppMessageOutboxFailedHandlerVTable = dyn AppMessageOutboxFailedHandler<'static>;
 
+#[must_use = "Callbacks are deregistered and dropped when [AppMessagesHandle] is dropped."]
 #[pin_init::pin_data(PinnedDrop)]
 pub struct AppMessagesHandle<'handle, FInboxReceived, FInboxDropped, FOutboxSent, FOutboxFailed> {
     #[pin]

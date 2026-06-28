@@ -563,6 +563,7 @@ name = "pebble-weather-graph-async"
 version = "0.1.0"
 dependencies = [
  "bindgen",
+ "cordyceps",
  "doxygen-bindgen",
  "doxygen-rs",
  "embassy-executor",

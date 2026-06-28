@@ -50,6 +50,22 @@ impl<'handle> AccelerometerServiceHandle<'handle> {
         }
     }
 
+    /// Set a callback to listen on accel service events.
+    ///
+    /// These closures are capable of borrowing references to local variables.
+    ///
+    /// This returns a [PinInit] as we need to pass the pebble SDK a pointer to
+    /// the stack allocated closures passed in. If [AppMessagesHandle] could
+    /// move, it would invalidate this reference.
+    ///
+    /// Use [pin_init::stack_pin_init] to allocate the result of this method in
+    /// your stack frame.
+    ///
+    /// N.B. I expose this as a callback due to there being a variable number of
+    /// [AccelData] values, which must be consumed within the scope of the
+    /// callback. If you want to react to these events in async code, you might
+    /// consider having the callback simply push these onto a queue.
+    #[must_use = "Service is unsubscribed and closure dropped when [DataServiceSubscription] is dropped."]
     pub fn subscribe_to_data_service<'subscription: 'handle, F>(
         &mut self,
         samples_per_update: u32,
@@ -77,6 +93,7 @@ impl<'handle> AccelerometerServiceHandle<'handle> {
         })
     }
 
+    #[must_use = "Service is unsubscribed and closure dropped when [RawDataServiceSubscription] is dropped."]
     pub fn subscribe_to_raw_data_service<'subscription: 'handle, F>(
         &mut self,
         samples_per_update: u32,
@@ -104,6 +121,7 @@ impl<'handle> AccelerometerServiceHandle<'handle> {
         })
     }
 
+    #[must_use = "Service is unsubscribed and closure dropped when [TapServiceSubscription] is dropped."]
     pub fn subscribe_to_tap_service<'subscription: 'handle, F>(
         &mut self,
         callback: F,
@@ -149,6 +167,7 @@ static RAW_DATA_SERVICE_SUBSCRIPTION_VTABLE: AtomicPtr<
 static TAP_SERVICE_SUBSCRIPTION_VTABLE: AtomicPtr<*mut TapServiceSubscriptionHandlerVTable> =
     AtomicPtr::null();
 
+#[must_use = "Service is unsubscribed and closure dropped when [DataServiceSubscription] is dropped."]
 #[pin_data(PinnedDrop)]
 pub struct DataServiceSubscription<'subscription, F> {
     #[pin]
@@ -184,6 +203,7 @@ unsafe extern "C" fn accel_data_service_handler(data: *mut AccelData, num_sample
     }
 }
 
+#[must_use = "Service is unsubscribed and closure dropped when [RawDataServiceSubscription] is dropped."]
 #[pin_data(PinnedDrop)]
 pub struct RawDataServiceSubscription<'subscription, F> {
     #[pin]
@@ -223,6 +243,7 @@ unsafe extern "C" fn accel_raw_data_service_handler(
     }
 }
 
+#[must_use = "Service is unsubscribed and closure dropped when [TapServiceSubscription] is dropped."]
 #[pin_data(PinnedDrop)]
 pub struct TapServiceSubscription<'subscription, F> {
     #[pin]

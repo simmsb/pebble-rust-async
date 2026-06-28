@@ -1,3 +1,5 @@
+///! Tick service subscriptions
+
 use core::{cell::Cell, marker::PhantomPinned, pin::Pin, ptr::NonNull, task::Poll};
 
 use cordyceps::{Linked, List, list::Links};
@@ -39,7 +41,7 @@ unsafe impl Linked<Links<TickServiceEntry>> for TickServiceEntry {
     }
 }
 
-pub trait TickServiceHandler<'env> = for<'tm> FnMut(&'tm bindings::tm, bindings::TimeUnits);
+pub trait TickServiceHandler<'env> = for<'tm> FnMut(&'tm bindings::tm, bindings::TimeUnits) + 'env;
 
 pub(crate) type TickServiceHandlerVTable = dyn TickServiceHandler<'static>;
 
@@ -90,7 +92,7 @@ where
 
         _pin_phantom: PhantomPinned,
     }).pin_chain(|p| {
-        let mut project = p.project();
+        let project = p.project();
 
         unsafe {
             LIST.with_mut(|l| {

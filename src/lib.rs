@@ -30,6 +30,7 @@ pub mod time_driver;
 pub mod utils;
 pub mod window;
 pub mod time;
+pub mod resources;
 
 pub use layers::IsLayer as _;
 

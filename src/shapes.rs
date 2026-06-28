@@ -1,7 +1,7 @@
-use crate::bindings::{GPoint, GRect, GSize};
+use crate::bindings::{self, GAlign, GPoint, GRect, GSize};
 
 impl GRect {
-    pub fn new(x: i16, y: i16, w: i16, h: i16) -> Self {
+    pub const fn new(x: i16, y: i16, w: i16, h: i16) -> Self {
         Self {
             origin: GPoint { x, y },
             size: GSize { w, h },
@@ -130,6 +130,13 @@ impl GRect {
         self.size.w = w;
         self
     }
+
+    pub fn align(mut self, inside: &GRect, alignment: GAlign, clip: bool) -> Self {
+        unsafe {
+            bindings::grect_align(&raw mut self, &raw const *inside, alignment, clip);
+        }
+        self
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -186,5 +193,24 @@ impl GRect {
             }
         }
         self
+    }
+}
+
+impl GPoint {
+    pub const fn new(x: i16, y: i16) -> Self {
+        Self { x, y }
+    }
+
+    pub const fn offset(self, by: GSize) -> Self {
+        Self {
+            x: self.x + by.w,
+            y: self.y + by.h,
+        }
+    }
+}
+
+impl GSize {
+    pub const fn new(w: i16, h: i16) -> Self {
+        Self { w, h }
     }
 }

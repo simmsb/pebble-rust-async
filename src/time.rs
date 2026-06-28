@@ -2,7 +2,7 @@ use crate::bindings;
 
 /// A UTC timestamp stored as the number of seconds since the epoch.
 #[derive(Clone, Copy, Eq, PartialEq, PartialOrd, Ord, ufmt::derive::uDebug)]
-pub struct Timestamp(pub bindings::time_t);
+pub struct Timestamp(pub i32);
 
 impl ufmt::uDisplay for Timestamp {
     fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>

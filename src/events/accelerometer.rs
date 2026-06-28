@@ -1,3 +1,4 @@
+///! Accelerometer service subscriptions
 use core::{
     marker::{PhantomData, PhantomPinned},
     mem::MaybeUninit,
@@ -12,14 +13,6 @@ use crate::bindings::{self, AccelAxisType, AccelData, AccelRawData};
 
 pub struct AccelerometerService {
     pub(crate) _private: (),
-}
-
-impl Drop for AccelerometerService {
-    fn drop(&mut self) {
-        unsafe {
-            bindings::accel_data_service_unsubscribe();
-        }
-    }
 }
 
 impl AccelerometerService {
@@ -146,6 +139,14 @@ impl<'handle> AccelerometerServiceHandle<'handle> {
 
             Ok(())
         })
+    }
+}
+
+impl<'handle> Drop for AccelerometerServiceHandle<'handle> {
+    fn drop(&mut self) {
+        unsafe {
+            bindings::accel_data_service_unsubscribe();
+        }
     }
 }
 

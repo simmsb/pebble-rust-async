@@ -11,7 +11,11 @@ use heapless::CString;
 use pin_init::stack_pin_init;
 
 use pebble_async::{
-    IsLayer as _, bindings::{self, GTextAlignment, TimeUnits}, events, layers::{Layer, StatusBarLayer, TextLayer}, shapes, window
+    IsLayer as _,
+    bindings::{self, GTextAlignment, TimeUnits},
+    events,
+    layers::{Layer, StatusBarLayer, TextLayer},
+    shapes, window,
 };
 
 pebble_async::main!(async_main);
@@ -21,7 +25,10 @@ async fn async_main(services: pebble_async::PebbleServices, spawner: embassy_exe
     async_main_(services, spawner).await;
 }
 
-async fn async_main_(mut services: pebble_async::PebbleServices, spawner: embassy_executor::Spawner) {
+async fn async_main_(
+    mut services: pebble_async::PebbleServices,
+    spawner: embassy_executor::Spawner,
+) {
     pebble_async::info!("Async main called!");
     window::with_window(async |mut h| {
         let mut app_messages = services.app_messages.open(1024, 512);
@@ -31,6 +38,14 @@ async fn async_main_(mut services: pebble_async::PebbleServices, spawner: embass
             |_| {},
             |_, _| {},
         ));
+        stack_pin_init!(let _app_message_listener = app_messages.listen(
+            |_d| {},
+            |_| {},
+            |_| {},
+            |_, _| {},
+        ));
+
+        let _ = app_messages.send(|d| d.u8(10001, 123));
 
         h.set_background_colour(bindings::GColor8::RED);
 
@@ -48,14 +63,14 @@ async fn async_main_(mut services: pebble_async::PebbleServices, spawner: embass
                 pebble_async::info!("second timer tick: {:?}", time);
             }));
 
-            let status_bar = h.root_layer().new_child::<StatusBarLayer>(()).unwrap();
+            let root_layer = h.root_layer();
+            let status_bar = root_layer.new_child::<StatusBarLayer>(()).unwrap();
 
             let remaining_space =
                 window_bounds.shrink_to_avoid(status_bar.layer().bounds(), shapes::Edge::Top, 0);
 
             stack_pin_init! {
-                let child_layer = h
-                    .root_layer()
+                let child_layer = root_layer
                     .new_child::<Layer>(remaining_space)
                     .unwrap()
                     .with_update_proc(|_layer, _ctx| {
@@ -71,6 +86,13 @@ async fn async_main_(mut services: pebble_async::PebbleServices, spawner: embass
                 num_taps += 1;
                 pebble_async::info!("Tap! {}, {:?}, {}", num_taps, axis, dir);
             }));
+
+            // let mut text_layer_drop_test = child_layer
+            //     .new_child::<TextLayer>(child_layer.bounds())
+            //     .unwrap();
+            // let g = text_layer_drop_test.set_text(c"foo");
+            // drop(text_layer_drop_test);
+            // drop(g);
 
             let mut text_layer: TextLayer<'_> = child_layer
                 .new_child::<TextLayer>(child_layer.bounds())

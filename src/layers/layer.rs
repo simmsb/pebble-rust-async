@@ -32,11 +32,11 @@ pub(crate) unsafe extern "C" fn layer_callback(
 // sense to have the separation.
 
 /// As [Layer], but isn't owned and therefore doesn't destroy the layer on drop.
-pub struct LayerRef<'layer> {
-    pub(crate) inner: core::mem::ManuallyDrop<Layer<'layer>>,
+pub struct LayerRef<'parent> {
+    pub(crate) inner: core::mem::ManuallyDrop<Layer<'parent>>,
 }
 
-impl<'layer> LayerRef<'layer> {
+impl<'parent> LayerRef<'parent> {
     pub(crate) fn from_ptr(ptr: NonNull<bindings::Layer>) -> Self {
         Self {
             inner: core::mem::ManuallyDrop::new(Layer::from_ptr(ptr)),
@@ -44,8 +44,8 @@ impl<'layer> LayerRef<'layer> {
     }
 }
 
-impl<'layer> Deref for LayerRef<'layer> {
-    type Target = Layer<'layer>;
+impl<'parent> Deref for LayerRef<'parent> {
+    type Target = Layer<'parent>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -53,11 +53,11 @@ impl<'layer> Deref for LayerRef<'layer> {
 }
 
 /// As [Layer], but isn't owned and therefore doesn't destroy the layer on drop.
-pub struct LayerMut<'layer> {
-    pub(crate) inner: core::mem::ManuallyDrop<Layer<'layer>>,
+pub struct LayerMut<'parent> {
+    pub(crate) inner: core::mem::ManuallyDrop<Layer<'parent>>,
 }
 
-impl<'layer> LayerMut<'layer> {
+impl<'parent> LayerMut<'parent> {
     pub(crate) fn from_ptr(ptr: NonNull<bindings::Layer>) -> Self {
         Self {
             inner: core::mem::ManuallyDrop::new(Layer::from_ptr(ptr)),
@@ -65,32 +65,31 @@ impl<'layer> LayerMut<'layer> {
     }
 }
 
-impl<'layer> Deref for LayerMut<'layer> {
-    type Target = Layer<'layer>;
+impl<'parent> Deref for LayerMut<'parent> {
+    type Target = Layer<'parent>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<'layer> DerefMut for LayerMut<'layer> {
+impl<'parent> DerefMut for LayerMut<'parent> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-/// A layer. The lifetime is used to track children.
-pub struct Layer<'layer> {
+pub struct Layer<'parent> {
     pub(crate) inner: NonNull<bindings::Layer>,
 
-    pub(crate) _phantom: PhantomData<&'layer ()>,
+    pub(crate) _phantom: PhantomData<&'parent ()>,
 }
 
 /// A layer with an attached update function. This needs to be pinned in order
 /// to have a stable reference to the callback data.
 #[pin_init::pin_data]
-pub struct LayerWithUpdateProc<'layer, F> {
-    inner: Layer<'layer>,
+pub struct LayerWithUpdateProc<'parent, F> {
+    inner: Layer<'parent>,
 
     callback: F,
 
@@ -98,15 +97,15 @@ pub struct LayerWithUpdateProc<'layer, F> {
     _pin_phantom: PhantomPinned,
 }
 
-impl<'layer, F> Deref for LayerWithUpdateProc<'layer, F> {
-    type Target = Layer<'layer>;
+impl<'parent, F> Deref for LayerWithUpdateProc<'parent, F> {
+    type Target = Layer<'parent>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<'layer, F> DerefMut for LayerWithUpdateProc<'layer, F> {
+impl<'parent, F> DerefMut for LayerWithUpdateProc<'parent, F> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
@@ -115,7 +114,7 @@ impl<'layer, F> DerefMut for LayerWithUpdateProc<'layer, F> {
 pub trait LayerUpdateProc<'env> = for<'cb> FnMut(LayerMut<'cb>, GContext<'cb>) + 'env;
 pub(crate) type LayerUpdateProcVTable = *mut dyn LayerUpdateProc<'static>;
 
-impl<'layer> Layer<'layer> {
+impl<'parent> Layer<'parent> {
     pub(crate) fn new(frame: GRect) -> Option<Self> {
         let ptr =
             unsafe { bindings::layer_create_with_data(frame, size_of::<LayerUpdateProcVTable>()) };
@@ -129,12 +128,12 @@ impl<'layer> Layer<'layer> {
         }
     }
 
-    pub fn new_child<'child: 'layer, LayerT>(
-        &self,
+    pub fn new_child<'layer, LayerT>(
+        &'layer self,
         create_params: LayerT::Parameters,
     ) -> Option<LayerT>
     where
-        LayerT: AsChildLayer<'child>,
+        LayerT: AsChildLayer<'layer>,
     {
         let child = LayerT::new_unparented(create_params)?;
         unsafe {
@@ -177,9 +176,9 @@ impl<'layer> Layer<'layer> {
     ///
     /// Use [pin_init::stack_pin_init] to allocate the result of this method in
     /// your stack frame.
-    pub fn with_update_proc<F>(self, callback: F) -> impl PinInit<LayerWithUpdateProc<'layer, F>>
+    pub fn with_update_proc<F>(self, callback: F) -> impl PinInit<LayerWithUpdateProc<'parent, F>>
     where
-        F: LayerUpdateProc<'layer>,
+        F: LayerUpdateProc<'parent>,
     {
         pin_init!(LayerWithUpdateProc {
             inner: self,
@@ -190,11 +189,11 @@ impl<'layer> Layer<'layer> {
             unsafe {
                 let project = p.project();
 
-                let callback_vtable = project.callback as *mut dyn LayerUpdateProc<'layer>;
+                let callback_vtable = project.callback as *mut dyn LayerUpdateProc<'parent>;
 
                 // N.B. this erases the lifetimes of the closure captures
                 let callback_vtable_static = core::mem::transmute::<
-                    *mut dyn LayerUpdateProc<'layer>,
+                    *mut dyn LayerUpdateProc<'parent>,
                     LayerUpdateProcVTable,
                 >(callback_vtable);
 
@@ -211,7 +210,7 @@ impl<'layer> Layer<'layer> {
     }
 }
 
-impl<'layer> Drop for Layer<'layer> {
+impl<'parent> Drop for Layer<'parent> {
     fn drop(&mut self) {
         unsafe {
             bindings::layer_destroy(self.inner.as_ptr());
@@ -219,7 +218,7 @@ impl<'layer> Drop for Layer<'layer> {
     }
 }
 
-impl<'a> AsChildLayer<'a> for Layer<'a> {
+impl<'parent> AsChildLayer<'parent> for Layer<'parent> {
     type Parameters = GRect;
 
     fn new_unparented(create_params: Self::Parameters) -> Option<Self> {
@@ -227,12 +226,12 @@ impl<'a> AsChildLayer<'a> for Layer<'a> {
     }
 }
 
-impl<'a> IsLayer for Layer<'a> {
-    fn layer(&self) -> LayerRef<'a> {
+impl<'parent> IsLayer for Layer<'parent> {
+    fn layer(&self) -> LayerRef<'parent> {
         LayerRef::from_ptr(self.inner)
     }
 
-    fn layer_mut(&mut self) -> LayerMut<'a> {
+    fn layer_mut(&mut self) -> LayerMut<'parent> {
         LayerMut::from_ptr(self.inner)
     }
 }

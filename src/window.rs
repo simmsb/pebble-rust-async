@@ -19,7 +19,7 @@ impl<'active> WindowHandle<'active> {
         }
     }
 
-    pub fn root_layer<'layer>(&'layer mut self) -> LayerRef<'layer> {
+    pub fn root_layer(&mut self) -> LayerRef<'active> {
         let ptr = unsafe { bindings::window_get_root_layer(self.inner.as_ptr()) };
 
         LayerRef::from_ptr(NonNull::new(ptr).unwrap())

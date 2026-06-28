@@ -102,13 +102,11 @@ impl<'a> GContext<'a> {
     }
 }
 
-pub struct TextAttributes<'context> {
+pub struct TextAttributes {
     inner: NonNull<GTextAttributes>,
-
-    _phantom: PhantomData<&'context ()>,
 }
 
-impl<'context> Drop for TextAttributes<'context> {
+impl<'context> Drop for TextAttributes {
     fn drop(&mut self) {
         unsafe {
             bindings::graphics_text_attributes_destroy(self.inner.as_ptr());
@@ -116,7 +114,7 @@ impl<'context> Drop for TextAttributes<'context> {
     }
 }
 
-impl<'context> TextAttributes<'context> {
+impl<'context> TextAttributes {
     pub fn enable_screen_text_flow(&mut self, inset: u8) {
         unsafe {
             bindings::graphics_text_attributes_enable_screen_text_flow(self.inner.as_ptr(), inset);
@@ -147,12 +145,11 @@ impl<'context> TextAttributes<'context> {
 }
 
 impl<'a> GContext<'a> {
-    pub fn text_attributes(&self) -> TextAttributes<'a> {
+    pub fn text_attributes(&self) -> TextAttributes {
         let ptr = unsafe { bindings::graphics_text_attributes_create() };
 
         TextAttributes {
             inner: NonNull::new(ptr).unwrap(),
-            _phantom: PhantomData,
         }
     }
 

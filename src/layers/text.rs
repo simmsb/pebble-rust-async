@@ -7,13 +7,13 @@ use crate::{
 
 use super::{AsChildLayer, IsLayer, LayerMut, LayerRef};
 
-pub struct TextLayer<'layer> {
+pub struct TextLayer<'parent> {
     pub(crate) inner: NonNull<bindings::TextLayer>,
 
-    pub(crate) _phantom: PhantomData<&'layer ()>,
+    pub(crate) _phantom: PhantomData<&'parent ()>,
 }
 
-impl<'layer> TextLayer<'layer> {
+impl<'parent> TextLayer<'parent> {
     pub(crate) fn new(frame: GRect) -> Option<Self> {
         let ptr = unsafe { bindings::text_layer_create(frame) };
         NonNull::new(ptr).map(Self::from_ptr)
@@ -29,7 +29,7 @@ impl<'layer> TextLayer<'layer> {
     /// Set contents of this text layer. The layer doesn't copy the text so the
     /// lifetime of the text must be greater than or equal to the layer.
     #[must_use = "Content is set back to an empty string when the returned guard is dropped"]
-    pub fn set_text<'text>(&mut self, text: &'text CStr) -> SetTextGuard<'text, 'layer> {
+    pub fn set_text<'text, 'a>(&'a mut self, text: &'text CStr) -> SetTextGuard<'text, 'a> {
         unsafe {
             bindings::text_layer_set_text(self.inner.as_ptr(), text.as_ptr());
         }
@@ -40,11 +40,11 @@ impl<'layer> TextLayer<'layer> {
         }
     }
 
-    pub fn get_text(&self) -> Option<&CStr> {
-        let ptr = unsafe { bindings::text_layer_get_text(self.inner.as_ptr()) };
+    // pub fn get_text(&self) -> Option<&CStr> {
+    //     let ptr = unsafe { bindings::text_layer_get_text(self.inner.as_ptr()) };
 
-        unsafe { NonNull::new(ptr.cast_mut()).map(|p| CStr::from_ptr(p.as_ptr())) }
-    }
+    //     unsafe { NonNull::new(ptr.cast_mut()).map(|p| CStr::from_ptr(p.as_ptr())) }
+    // }
 
     pub fn set_background_colour(&mut self, colour: GColor) {
         unsafe {
@@ -99,7 +99,7 @@ impl<'layer> TextLayer<'layer> {
     }
 }
 
-impl<'layer> Drop for TextLayer<'layer> {
+impl<'parent> Drop for TextLayer<'parent> {
     fn drop(&mut self) {
         unsafe {
             bindings::text_layer_destroy(self.inner.as_ptr());

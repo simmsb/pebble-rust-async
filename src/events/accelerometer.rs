@@ -16,6 +16,13 @@ pub struct AccelerometerService {
 }
 
 impl AccelerometerService {
+    #[doc(hidden)]
+    pub unsafe fn steal() -> Self {
+        Self {
+            _private: (),
+        }
+    }
+
     pub fn enable<'this, 'handle: 'this>(&'this mut self) -> AccelerometerServiceHandle<'handle> {
         unsafe {
             bindings::accel_data_service_subscribe(1, None);
@@ -48,7 +55,7 @@ impl<'handle> AccelerometerServiceHandle<'handle> {
     /// These closures are capable of borrowing references to local variables.
     ///
     /// This returns a [PinInit] as we need to pass the pebble SDK a pointer to
-    /// the stack allocated closures passed in. If [AppMessagesHandle] could
+    /// the stack allocated closures passed in. If [AccelerometerServiceHandle] could
     /// move, it would invalidate this reference.
     ///
     /// Use [pin_init::stack_pin_init] to allocate the result of this method in

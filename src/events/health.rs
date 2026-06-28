@@ -159,7 +159,7 @@ fn stream_closure(ptr: NonNull<HealthServiceStream>) -> HealthServiceStreamHandl
     }
 }
 
-/// Similar to [listen], this returns a [futures::Stream] of [Datetime].
+/// Similar to [listen], this returns a [futures::Stream] of [HealthEventType].
 ///
 /// NOTE: You can create multiple health event listeners from multiple locations,
 /// the library handles this elegantly using an intrusive linked list of

@@ -15,6 +15,13 @@ pub struct AppMessages {
     pub(crate) _private: (),
 }
 
+impl AppMessages {
+    #[doc(hidden)]
+    pub unsafe fn steal() -> Self {
+        Self { _private: () }
+    }
+}
+
 pub trait AppMessageInboxReceivedHandler<'env> =
     for<'message> FnMut(DictionaryRef<'message>) + 'env;
 

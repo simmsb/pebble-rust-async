@@ -39,7 +39,7 @@ def process_cargo_staticlib(tg):
     tg.target = tg.cargo_libname
 
 
-def _declare_rust_staticlib(ctx, platform, rust_target, libname='pebble_weather_graph_async'):
+def _declare_rust_staticlib(ctx, platform, rust_target, libname='pebble_async_example'):
     rust_dir = ctx.path.find_node('.')
     target_dir = ctx.bldnode.make_node('target/{}'.format(platform))
     libnode = target_dir.make_node(
@@ -70,7 +70,7 @@ def _declare_rust_staticlib(ctx, platform, rust_target, libname='pebble_weather_
         cargo_cflags=' '.join(ctx.env.CFLAGS),
         # Needed or the built program will be wonky, seems to cause it to not call functions correctly?
         cargo_rustflags='-C relocation-model=pie -C codegen-units=1 -C link-arg=--gc-sections -C link-arg=--build-id=sha1 -C link-arg=--emit-relocs -C debuginfo=2',
-        cargo_cmd=['cargo', 'build', '--release',
+        cargo_cmd=['cargo', 'build', '--release', '-p', 'pebble-async-example',
                    '--target', rust_target,
                    '--target-dir', target_dir.abspath()],
     )

@@ -93,7 +93,7 @@ unsafe fn make_static<T>(t: &mut T) -> &'static mut T {
 /// This is safe to use from inside pebble SDK callbacks which might be called
 /// by either [crate::bindings::app_event_loop] or directly by a SDK function
 /// called by user code (e.g. window deregister events called on the window
-/// being popped, by [crate::bindings:window_stack_pop])
+/// being popped, by [crate::bindings::window_stack_pop])
 ///
 /// # Safety
 ///

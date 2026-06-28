@@ -36,6 +36,7 @@ use crate::single_core_cell::SingleCoreCell;
 static LOG_BUFFER: SingleCoreCell<MaybeUninit<heapless::CString<128>>> =
     SingleCoreCell::new(MaybeUninit::uninit());
 
+#[cfg(feature = "logging")]
 #[doc(hidden)]
 pub fn _with_log_buf(f: impl FnOnce(&mut heapless::CString<128>)) {
     unsafe {
@@ -69,10 +70,10 @@ pub fn _with_log_buf(f: impl FnOnce(&mut heapless::CString<128>)) {
 //     }
 // }
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! log {
     ($level:expr, $file:expr, $line:expr, $($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         {
             $crate::log_impl::_with_log_buf(|buf| {
                 let _ = ::ufmt::uwrite!(buf, $($arg)*);
@@ -92,6 +93,14 @@ macro_rules! log {
         }
     };
 }
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! log {
+    ($level:expr, $file:expr, $line:expr, $($arg:tt)*) => {
+        {
+        }
+    };
+}
 
 // pub fn init() {
 //     #[cfg(feature = "logging")]
@@ -105,10 +114,10 @@ macro_rules! log {
 //     }
 // }
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         $crate::log!(
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_ERROR,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
@@ -117,11 +126,16 @@ macro_rules! error {
         )
     };
 }
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! error {
+    ($($arg:tt)*) => {}
+}
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         $crate::log!(
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_WARNING,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
@@ -130,11 +144,16 @@ macro_rules! warn {
         )
     };
 }
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => {}
+}
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         $crate::log!(
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_INFO,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
@@ -143,11 +162,16 @@ macro_rules! info {
         )
     };
 }
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {}
+}
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         $crate::log!(
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_DEBUG,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
@@ -156,11 +180,16 @@ macro_rules! debug {
         )
     };
 }
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {}
+}
 
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! trace {
     ($($arg:tt)*) => {
-        #[cfg(feature = "logging")]
         $crate::log!(
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_DEBUG_VERBOSE,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
@@ -168,4 +197,9 @@ macro_rules! trace {
             $($arg)*,
         )
     };
+}
+#[cfg(not(feature = "logging"))]
+#[macro_export]
+macro_rules! trace {
+    ($($arg:tt)*) => {}
 }

@@ -1,0 +1,23 @@
+cargo-features = ["panic-immediate-abort"]
+
+[lib]
+crate-type = ["staticlib"]
+
+[package]
+name = "pebble-async-example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pebble-async = { path = ".." }
+embassy-executor = { version = "0.10.0", default-features = false, features = ["nightly", "embassy-time-driver"] }
+embassy-time-driver = { version = "0.2.2" }
+embassy-time-queue-utils = "0.3.2"
+embassy-time = { version = "0.5.1", features = ["tick-hz-1_000"] }
+embassy-sync = "0.8.0"
+embassy-futures = "0.1.2"
+heapless = { version = "0.9.3", features = ["ufmt"] }
+ufmt = { version = "0.2.0", default-features = false }
+pin-init = { git = "https://github.com/Rust-for-Linux/pin-init", version = "0.3.0", default-features = false, features = ["unsafe-pinned"] }
+futures = { version = "0.3.32", default-features = false }
+

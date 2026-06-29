@@ -4,13 +4,13 @@ use crate::{bindings, colour::GColor};
 
 use super::{AsChildLayer, IsLayer, LayerMut, LayerRef};
 
-pub struct StatusBarLayer<'parent> {
+pub struct StatusBarLayer<'layer> {
     pub(crate) inner: NonNull<bindings::StatusBarLayer>,
 
-    pub(crate) _phantom: PhantomData<&'parent ()>,
+    pub(crate) _phantom: PhantomData<&'layer ()>,
 }
 
-impl<'parent> StatusBarLayer<'parent> {
+impl<'layer> StatusBarLayer<'layer> {
     pub(crate) fn new() -> Option<Self> {
         let ptr = unsafe { bindings::status_bar_layer_create() };
         NonNull::new(ptr).map(Self::from_ptr)
@@ -44,7 +44,7 @@ impl<'parent> StatusBarLayer<'parent> {
     }
 }
 
-impl<'parent> Drop for StatusBarLayer<'parent> {
+impl<'layer> Drop for StatusBarLayer<'layer> {
     fn drop(&mut self) {
         unsafe {
             bindings::status_bar_layer_destroy(self.inner.as_ptr());
@@ -52,7 +52,7 @@ impl<'parent> Drop for StatusBarLayer<'parent> {
     }
 }
 
-impl<'parent> AsChildLayer<'parent> for StatusBarLayer<'parent> {
+impl<'layer> AsChildLayer<'layer> for StatusBarLayer<'layer> {
     type Parameters = ();
 
     fn new_unparented(_create_params: Self::Parameters) -> Option<Self> {
@@ -60,7 +60,7 @@ impl<'parent> AsChildLayer<'parent> for StatusBarLayer<'parent> {
     }
 }
 
-impl<'parent> IsLayer for StatusBarLayer<'parent> {
+impl<'layer> IsLayer for StatusBarLayer<'layer> {
     fn layer<'a>(&'a self) -> super::LayerRef<'a> {
         let ptr = unsafe { bindings::status_bar_layer_get_layer(self.inner.as_ptr()) };
         LayerRef::from_ptr(NonNull::new(ptr).unwrap())

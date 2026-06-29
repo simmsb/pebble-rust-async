@@ -7,13 +7,13 @@ use crate::{
 
 use super::{AsChildLayer, IsLayer, LayerMut, LayerRef};
 
-pub struct TextLayer<'parent> {
+pub struct TextLayer<'layer> {
     pub(crate) inner: NonNull<bindings::TextLayer>,
 
-    pub(crate) _phantom: PhantomData<&'parent ()>,
+    pub(crate) _phantom: PhantomData<&'layer ()>,
 }
 
-impl<'parent> TextLayer<'parent> {
+impl<'layer> TextLayer<'layer> {
     pub(crate) fn new(frame: GRect) -> Option<Self> {
         let ptr = unsafe { bindings::text_layer_create(frame) };
         NonNull::new(ptr).map(Self::from_ptr)
@@ -40,11 +40,14 @@ impl<'parent> TextLayer<'parent> {
         }
     }
 
-    // pub fn get_text(&self) -> Option<&CStr> {
-    //     let ptr = unsafe { bindings::text_layer_get_text(self.inner.as_ptr()) };
+    /// View the text of the text layer.
+    ///
+    /// Note, this assumes that the text isn't being updated through SDK functions while the borrow is active.
+    pub fn get_text<'text>(&'text self) -> Option<&'text CStr> {
+        let ptr = unsafe { bindings::text_layer_get_text(self.inner.as_ptr()) };
 
-    //     unsafe { NonNull::new(ptr.cast_mut()).map(|p| CStr::from_ptr(p.as_ptr())) }
-    // }
+        unsafe { NonNull::new(ptr.cast_mut()).map(|p| CStr::from_ptr(p.as_ptr())) }
+    }
 
     pub fn set_background_colour(&mut self, colour: GColor) {
         unsafe {
@@ -99,7 +102,7 @@ impl<'parent> TextLayer<'parent> {
     }
 }
 
-impl<'parent> Drop for TextLayer<'parent> {
+impl<'layer> Drop for TextLayer<'layer> {
     fn drop(&mut self) {
         unsafe {
             bindings::text_layer_destroy(self.inner.as_ptr());

@@ -32,11 +32,11 @@ pub(crate) unsafe extern "C" fn layer_callback(
 // sense to have the separation.
 
 /// As [Layer], but isn't owned and therefore doesn't destroy the layer on drop.
-pub struct LayerRef<'parent> {
-    pub(crate) inner: core::mem::ManuallyDrop<Layer<'parent>>,
+pub struct LayerRef<'layer> {
+    pub(crate) inner: core::mem::ManuallyDrop<Layer<'layer>>,
 }
 
-impl<'parent> LayerRef<'parent> {
+impl<'layer> LayerRef<'layer> {
     pub(crate) fn from_ptr(ptr: NonNull<bindings::Layer>) -> Self {
         Self {
             inner: core::mem::ManuallyDrop::new(Layer::from_ptr(ptr)),
@@ -44,8 +44,8 @@ impl<'parent> LayerRef<'parent> {
     }
 }
 
-impl<'parent> Deref for LayerRef<'parent> {
-    type Target = Layer<'parent>;
+impl<'layer> Deref for LayerRef<'layer> {
+    type Target = Layer<'layer>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -53,11 +53,11 @@ impl<'parent> Deref for LayerRef<'parent> {
 }
 
 /// As [Layer], but isn't owned and therefore doesn't destroy the layer on drop.
-pub struct LayerMut<'parent> {
-    pub(crate) inner: core::mem::ManuallyDrop<Layer<'parent>>,
+pub struct LayerMut<'layer> {
+    pub(crate) inner: core::mem::ManuallyDrop<Layer<'layer>>,
 }
 
-impl<'parent> LayerMut<'parent> {
+impl<'layer> LayerMut<'layer> {
     pub(crate) fn from_ptr(ptr: NonNull<bindings::Layer>) -> Self {
         Self {
             inner: core::mem::ManuallyDrop::new(Layer::from_ptr(ptr)),
@@ -65,31 +65,31 @@ impl<'parent> LayerMut<'parent> {
     }
 }
 
-impl<'parent> Deref for LayerMut<'parent> {
-    type Target = Layer<'parent>;
+impl<'layer> Deref for LayerMut<'layer> {
+    type Target = Layer<'layer>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<'parent> DerefMut for LayerMut<'parent> {
+impl<'layer> DerefMut for LayerMut<'layer> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-pub struct Layer<'parent> {
+pub struct Layer<'layer> {
     pub(crate) inner: NonNull<bindings::Layer>,
 
-    pub(crate) _phantom: PhantomData<&'parent ()>,
+    pub(crate) _phantom: PhantomData<&'layer ()>,
 }
 
 /// A layer with an attached update function. This needs to be pinned in order
 /// to have a stable reference to the callback data.
 #[pin_init::pin_data]
-pub struct LayerWithUpdateProc<'parent, F> {
-    inner: Layer<'parent>,
+pub struct LayerWithUpdateProc<'layer, F> {
+    inner: Layer<'layer>,
 
     callback: F,
 
@@ -97,15 +97,15 @@ pub struct LayerWithUpdateProc<'parent, F> {
     _pin_phantom: PhantomPinned,
 }
 
-impl<'parent, F> Deref for LayerWithUpdateProc<'parent, F> {
-    type Target = Layer<'parent>;
+impl<'layer, F> Deref for LayerWithUpdateProc<'layer, F> {
+    type Target = Layer<'layer>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<'parent, F> DerefMut for LayerWithUpdateProc<'parent, F> {
+impl<'layer, F> DerefMut for LayerWithUpdateProc<'layer, F> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
@@ -114,7 +114,7 @@ impl<'parent, F> DerefMut for LayerWithUpdateProc<'parent, F> {
 pub trait LayerUpdateProc<'env> = for<'cb> FnMut(LayerMut<'cb>, GContext<'cb>) + 'env;
 pub(crate) type LayerUpdateProcVTable = *mut dyn LayerUpdateProc<'static>;
 
-impl<'parent> Layer<'parent> {
+impl<'layer> Layer<'layer> {
     pub(crate) fn new(frame: GRect) -> Option<Self> {
         let ptr =
             unsafe { bindings::layer_create_with_data(frame, size_of::<LayerUpdateProcVTable>()) };
@@ -128,12 +128,10 @@ impl<'parent> Layer<'parent> {
         }
     }
 
-    pub fn new_child<'layer, LayerT>(
-        &'layer self,
-        create_params: LayerT::Parameters,
-    ) -> Option<LayerT>
+    pub fn new_child<'child, LayerT>(&self, create_params: LayerT::Parameters) -> Option<LayerT>
     where
-        LayerT: AsChildLayer<'layer>,
+        'layer: 'child,
+        LayerT: AsChildLayer<'child>,
     {
         let child = LayerT::new_unparented(create_params)?;
         unsafe {
@@ -142,7 +140,7 @@ impl<'parent> Layer<'parent> {
         Some(child)
     }
 
-    pub fn mark_dirty(&mut self) {
+    pub fn mark_dirty(&self) {
         unsafe {
             bindings::layer_mark_dirty(self.inner.as_ptr());
         }
@@ -176,9 +174,9 @@ impl<'parent> Layer<'parent> {
     ///
     /// Use [pin_init::stack_pin_init] to allocate the result of this method in
     /// your stack frame.
-    pub fn with_update_proc<F>(self, callback: F) -> impl PinInit<LayerWithUpdateProc<'parent, F>>
+    pub fn with_update_proc<F>(self, callback: F) -> impl PinInit<LayerWithUpdateProc<'layer, F>>
     where
-        F: LayerUpdateProc<'parent>,
+        F: for<'cb> FnMut(LayerMut<'cb>, GContext<'cb>) + 'layer,
     {
         pin_init!(LayerWithUpdateProc {
             inner: self,
@@ -189,11 +187,11 @@ impl<'parent> Layer<'parent> {
             unsafe {
                 let project = p.project();
 
-                let callback_vtable = project.callback as *mut dyn LayerUpdateProc<'parent>;
+                let callback_vtable = project.callback as *mut dyn LayerUpdateProc<'layer>;
 
                 // N.B. this erases the lifetimes of the closure captures
                 let callback_vtable_static = core::mem::transmute::<
-                    *mut dyn LayerUpdateProc<'parent>,
+                    *mut dyn LayerUpdateProc<'layer>,
                     LayerUpdateProcVTable,
                 >(callback_vtable);
 
@@ -210,7 +208,7 @@ impl<'parent> Layer<'parent> {
     }
 }
 
-impl<'parent> Drop for Layer<'parent> {
+impl<'layer> Drop for Layer<'layer> {
     fn drop(&mut self) {
         unsafe {
             bindings::layer_destroy(self.inner.as_ptr());
@@ -218,7 +216,7 @@ impl<'parent> Drop for Layer<'parent> {
     }
 }
 
-impl<'parent> AsChildLayer<'parent> for Layer<'parent> {
+impl<'layer> AsChildLayer<'layer> for Layer<'layer> {
     type Parameters = GRect;
 
     fn new_unparented(create_params: Self::Parameters) -> Option<Self> {
@@ -226,12 +224,12 @@ impl<'parent> AsChildLayer<'parent> for Layer<'parent> {
     }
 }
 
-impl<'parent> IsLayer for Layer<'parent> {
-    fn layer(&self) -> LayerRef<'parent> {
+impl<'layer> IsLayer for Layer<'layer> {
+    fn layer(&self) -> LayerRef<'layer> {
         LayerRef::from_ptr(self.inner)
     }
 
-    fn layer_mut(&mut self) -> LayerMut<'parent> {
+    fn layer_mut(&mut self) -> LayerMut<'layer> {
         LayerMut::from_ptr(self.inner)
     }
 }

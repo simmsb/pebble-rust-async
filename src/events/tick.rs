@@ -115,11 +115,11 @@ pub struct TickServiceStream {
 
     waker: AtomicWaker,
 
-    value: Cell<Option<Datetime>>,
+    value: Cell<Option<(Datetime, TimeUnits)>>,
 }
 
 impl futures::Stream for TickServiceStream {
-    type Item = Datetime;
+    type Item = (Datetime, TimeUnits);
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -138,10 +138,10 @@ impl futures::Stream for TickServiceStream {
 
 #[define_opaque(TickServiceStreamHandler)]
 fn stream_closure(ptr: NonNull<TickServiceStream>) -> TickServiceStreamHandler {
-    move |tm: &bindings::tm, _| unsafe {
+    move |tm: &bindings::tm, units| unsafe {
         let waker_ptr = &raw mut (*ptr.as_ptr()).waker;
         let value_ptr = &raw mut (*ptr.as_ptr()).value;
-        (*value_ptr).set(Some(Datetime::from_tm(tm)));
+        (*value_ptr).set(Some((Datetime::from_tm(tm), units)));
         (*waker_ptr).wake();
     }
 }

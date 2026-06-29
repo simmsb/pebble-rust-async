@@ -86,6 +86,10 @@ unsafe impl Linked<Links<AppMessageEntry>> for AppMessageEntry {
     }
 }
 
+pub type EmptyInboxDroppedHandler = impl AppMessageInboxDroppedHandler<'static>;
+pub type EmptyOutboxSentHandler = impl AppMessageOutboxSentHandler<'static>;
+pub type EmptyOutboxFailedHandler = impl AppMessageOutboxFailedHandler<'static>;
+
 pub struct AppMessagesHandle<'handle> {
     app_messages: NonNull<AppMessages>,
     _phantom: PhantomData<&'handle mut ()>,
@@ -93,7 +97,7 @@ pub struct AppMessagesHandle<'handle> {
 
 impl<'handle> AppMessagesHandle<'handle> {
     pub fn send(
-        &mut self,
+        &self,
         f: impl for<'dictionary> FnOnce(
             &mut DictionaryWriter<'dictionary>,
         ) -> Result<(), bindings::DictionaryResult>,
@@ -125,7 +129,7 @@ impl<'handle> AppMessagesHandle<'handle> {
     /// your stack frame.
     #[must_use = "Callbacks are deregistered and dropped when [AppMessageListenerHandle] is dropped."]
     pub fn listen<'subscription, FInboxReceived, FInboxDropped, FOutboxSent, FOutboxFailed>(
-        &mut self,
+        &self,
         inbox_received: FInboxReceived,
         inbox_dropped: FInboxDropped,
         outbox_sent: FOutboxSent,
@@ -184,6 +188,60 @@ impl<'handle> AppMessagesHandle<'handle> {
             Ok(())
         })
     }
+
+    /// Register callbacks to listen on app message receive events.
+    ///
+    /// These closures are capable of borrowing references to local variables.
+    ///
+    /// NOTE: You can create multiple app message event listeners from multiple
+    /// locations, the library handles this elegantly using an intrusive linked
+    /// list of stack-allocated nodes.
+    ///
+    /// This returns a [PinInit] as we need to pass the pebble SDK a pointer to
+    /// the stack allocated closures passed in. If [AppMessageListenerHandle]
+    /// could move, it would invalidate this reference.
+    ///
+    /// Use [pin_init::stack_pin_init] to allocate the result of this method in
+    /// your stack frame.
+    #[must_use = "Callbacks are deregistered and dropped when [AppMessageListenerHandle] is dropped."]
+    pub fn listen_received<'subscription, FInboxReceived>(
+        &self,
+        inbox_received: FInboxReceived,
+    ) -> impl PinInit<
+        AppMessageListenerHandle<
+            'subscription,
+            FInboxReceived,
+            EmptyInboxDroppedHandler,
+            EmptyOutboxSentHandler,
+            EmptyOutboxFailedHandler,
+        >,
+    >
+    where
+        'subscription: 'handle,
+        FInboxReceived: for<'message> FnMut(DictionaryRef<'message>) + 'subscription,
+    {
+        self.listen(
+            inbox_received,
+            empty_inbox_dropped_handler(),
+            empty_outbox_sent_handler(),
+            empty_outbox_failed_handler(),
+        )
+    }
+}
+
+#[define_opaque(EmptyInboxDroppedHandler)]
+fn empty_inbox_dropped_handler() -> EmptyInboxDroppedHandler {
+    |_| {}
+}
+
+#[define_opaque(EmptyOutboxSentHandler)]
+fn empty_outbox_sent_handler() -> EmptyOutboxSentHandler {
+    |_| {}
+}
+
+#[define_opaque(EmptyOutboxFailedHandler)]
+fn empty_outbox_failed_handler() -> EmptyOutboxFailedHandler {
+    |_, _| {}
 }
 
 impl Drop for AppMessagesHandle<'_> {

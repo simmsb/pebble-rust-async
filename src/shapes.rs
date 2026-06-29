@@ -207,10 +207,24 @@ impl GPoint {
             y: self.y + by.h,
         }
     }
+
+    pub const fn with_size(self, size: GSize) -> GRect {
+        GRect {
+            origin: self,
+            size,
+        }
+    }
 }
 
 impl GSize {
     pub const fn new(w: i16, h: i16) -> Self {
         Self { w, h }
+    }
+
+    pub const fn with_origin(self, origin: GPoint) -> GRect {
+        GRect {
+            origin,
+            size: self,
+        }
     }
 }

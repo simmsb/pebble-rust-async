@@ -18,7 +18,22 @@ use pebble_async::{
     shapes, window,
 };
 
-pebble_async::main!(async_main);
+fn init(s: embassy_executor::Spawner) {
+    let token = match async_main(unsafe { pebble_async::PebbleServices::steal() }, s) {
+        Ok(token) => token,
+        Err(reason) => match reason {
+            embassy_executor::SpawnError::Busy => {
+                panic!("Busy spawn");
+            }
+        },
+    };
+    s.spawn(token);
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn main() {
+    pebble_async::executor::init();
+    pebble_async::executor::run(init);
+}
 
 #[embassy_executor::task]
 async fn async_main(services: pebble_async::PebbleServices, spawner: embassy_executor::Spawner) {
@@ -30,6 +45,16 @@ async fn async_main_(
     spawner: embassy_executor::Spawner,
 ) {
     pebble_async::info!("Async main called!");
+
+    // #[cfg(all(target_has_atomic = "32"))]
+    // pebble_async::info!("Has atomic 32!");
+
+    // #[cfg(not(any(target_has_atomic = "8", target_has_atomic = "32")))]
+    // pebble_async::info!("Has criticl!");
+
+    // #[cfg(all(any(target_has_atomic = "8", target_has_atomic = "32")))]
+    // pebble_async::info!("Has atomic!");
+
     window::with_window(async |mut h| {
         let mut app_messages = services.app_messages.open(1024, 512);
         stack_pin_init!(let _app_message_listener = app_messages.listen(
@@ -121,7 +146,7 @@ async fn async_main_(
 
         stack_pin_init!(let timer_seconds_stream = events::tick::stream(TimeUnits::SECOND_UNIT));
         while let Some(t) = timer_seconds_stream.next().await {
-            pebble_async::info!("second tick stream: {}", t.secs);
+            pebble_async::info!("second tick stream: {}", t.0.secs);
         }
 
         // layers now destroyed, app should show just the window with its red background

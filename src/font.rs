@@ -2,7 +2,9 @@ use core::ffi::CStr;
 
 use crate::{bindings, resources::Resource};
 
-#[derive(Clone)]
+// font is copy+clone as we don't permit unloading it
+
+#[derive(Copy, Clone)]
 pub struct Font(pub(crate) bindings::GFont);
 
 pub mod system {

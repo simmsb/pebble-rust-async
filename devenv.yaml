@@ -1,7 +1,4 @@
 inputs:
-  cargo-pebble:
-    url: github:Peatral/pebble-rust
-    flake: false
   crate2nix:
     url: github:nix-community/crate2nix
     inputs:
@@ -10,7 +7,7 @@ inputs:
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
   pebble:
-    url: github:pebble-dev/pebble.nix
+    url: github:simmsb/pebble.nix
     inputs:
       nixpkgs:
         follows: nixpkgs

@@ -5,6 +5,7 @@
 #![feature(trait_alias)]
 #![feature(atomic_ptr_null)]
 #![feature(type_alias_impl_trait)]
+#![feature(int_roundings)]
 
 pub mod app_message;
 pub mod colour;
@@ -22,6 +23,7 @@ pub mod time;
 pub mod time_driver;
 pub mod utils;
 pub mod window;
+pub mod storage;
 
 pub use layers::IsLayer;
 
@@ -29,6 +31,10 @@ pub mod bindings {
     #![allow(warnings)]
 
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+}
+
+pub mod messages {
+    include!(concat!(env!("OUT_DIR"), "/messages.rs"));
 }
 
 pub struct PebbleServices {
@@ -83,13 +89,13 @@ extern "C" fn trigger_panic() -> ! {
         bindings::exit_reason_set(bindings::AppExitReason::APP_EXIT_NOT_SPECIFIED);
         bindings::window_stack_pop_all(false);
 
-        // bindings::app_event_loop();
+        bindings::app_event_loop();
     };
 
-    unsafe {
-        let crash: *mut u32 = core::ptr::null_mut();
-        core::ptr::write_volatile(crash, 0xDEADBEEF);
-    }
+    // unsafe {
+    //     let crash: *mut u32 = core::ptr::null_mut();
+    //     core::ptr::write_volatile(crash, 0xDEADBEEF);
+    // }
 
     loop {}
 }
@@ -98,5 +104,19 @@ extern "C" fn trigger_panic() -> ! {
 fn panic(info: &core::panic::PanicInfo) -> ! {
     let msg = info.message().as_str().unwrap_or("<no message>");
     crate::error!("Panic! {}", msg);
+    crate::error!("{}:{}", info.location().map(|l| l.file()).unwrap_or(""), info.location().map(|l| l.line()).unwrap_or(0));
     trigger_panic();
+}
+
+
+struct CriticalSectionImpl;
+critical_section::set_impl!(CriticalSectionImpl);
+
+unsafe impl critical_section::Impl for CriticalSectionImpl {
+    unsafe fn acquire() -> critical_section::RawRestoreState {
+        ()
+    }
+
+    unsafe fn release(_restore_state: critical_section::RawRestoreState) {
+    }
 }

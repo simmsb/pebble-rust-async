@@ -53,6 +53,8 @@ ufmt = { version = "0.2.0", default-features = false }
 pin-init = { git = "https://github.com/Rust-for-Linux/pin-init", version = "0.3.0", default-features = false, features = ["unsafe-pinned"] }
 futures = { version = "0.3.32", default-features = false }
 cordyceps = { version = "0.3.4", default-features = false, features = ["no-cache-pad"] }
+critical-section = { version = "1.2.0", features = ["restore-state-none"] }
+portable-atomic = { version = "1.13.1", features = ["unsafe-assume-single-core"] }
 
 [patch.crates-io]
 ufmt = { git = "https://github.com/simmsb/ufmt" }

@@ -26,22 +26,6 @@
         "type": "github"
       }
     },
-    "cargo-pebble": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1781884028,
-        "narHash": "sha256-AGDLZ2T3CAiInfshJ1yEmyto4SgFlyrRAnp3y+S6m+M=",
-        "owner": "Peatral",
-        "repo": "pebble-rust",
-        "rev": "77db07f09ccd877530e13e045f7fef06f76cac84",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Peatral",
-        "repo": "pebble-rust",
-        "type": "github"
-      }
-    },
     "commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -366,15 +350,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1780272455,
-        "narHash": "sha256-SYKDJMrygp6+jxqCAQvMkgitrpZBu2OB17nNuddmsK4=",
-        "owner": "pebble-dev",
+        "lastModified": 1782733520,
+        "narHash": "sha256-RbLg5uyO4BETC86EmYsmGDJNpQjrPaCYH3h65wEmzLQ=",
+        "owner": "simmsb",
         "repo": "pebble.nix",
-        "rev": "51f2a2619b4cc7f3d143c9d3e8478ff8a2096784",
+        "rev": "3d26b94ecc09ec35aa66d0da2c1f04ac54083502",
         "type": "github"
       },
       "original": {
-        "owner": "pebble-dev",
+        "owner": "simmsb",
         "repo": "pebble.nix",
         "type": "github"
       }
@@ -407,7 +391,6 @@
     },
     "root": {
       "inputs": {
-        "cargo-pebble": "cargo-pebble",
         "crate2nix": "crate2nix",
         "devenv": "devenv",
         "nixpkgs": "nixpkgs_2",

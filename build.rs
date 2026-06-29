@@ -1,10 +1,12 @@
 use bindgen::{
     EnumVariation,
-    callbacks::{ParseCallbacks, TypeKind},
+    callbacks::{ItemInfo, ItemKind, ParseCallbacks, TypeKind},
 };
 use std::env;
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Arc, Mutex};
 
 fn get_pebble_include_path(platform: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let output = Command::new("pebble")
@@ -134,6 +136,50 @@ impl ParseCallbacks for AddDerives {
     }
 }
 
+#[derive(Debug, Clone)]
+struct CollectMessageKeys {
+    keys: Arc<Mutex<Vec<String>>>,
+}
+
+impl Default for CollectMessageKeys {
+    fn default() -> Self {
+        Self {
+            keys: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+}
+
+impl ParseCallbacks for CollectMessageKeys {
+    fn generated_name_override(&self, item_info: ItemInfo<'_>) -> Option<String> {
+        if matches!(item_info.kind, ItemKind::Var) {
+            if let Some(name) = item_info.name.strip_prefix("MESSAGE_KEY_") {
+                self.keys.lock().unwrap().push(name.to_owned());
+            }
+        }
+        None
+    }
+}
+
+fn write_messages_rs(path: &Path, keys: &[String]) -> std::io::Result<()> {
+    let mut keys: Vec<_> = keys.to_vec();
+    keys.sort();
+    keys.dedup();
+
+    let mut file = std::fs::File::create(path)?;
+    for name in keys {
+        writeln!(file, "#[allow(non_snake_case)]")?;
+        writeln!(file, "pub fn {name}() -> u32 {{")?;
+        writeln!(
+            file,
+            "    unsafe {{ crate::bindings::MESSAGE_KEY_{name} }}"
+        )?;
+        writeln!(file, "}}")?;
+        writeln!(file)?;
+    }
+
+    Ok(())
+}
+
 fn main() {
     println!("cargo:rerun-if-env-changed=PEBBLE_INCLUDE_DIRS");
     println!("cargo:rerun-if-env-changed=PEBBLE_CFLAGS");
@@ -163,6 +209,8 @@ fn main() {
 
     dbg!(&clang_args);
 
+    let message_keys = CollectMessageKeys::default();
+
     let bindings = bindgen::Builder::default()
         .header_contents("wrapper.h", wrapper)
         .clang_args(clang_args)
@@ -172,6 +220,7 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .parse_callbacks(Box::new(ProcessComments))
         .parse_callbacks(Box::new(AddDerives))
+        .parse_callbacks(Box::new(message_keys.clone()))
         .bitfield_enum("TimeUnits")
         .clang_args(&["-E", "-CC"])
         .clang_arg("--target=arm-none-eabi")
@@ -191,4 +240,8 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    let keys = message_keys.keys.lock().unwrap().clone();
+    write_messages_rs(&out_path.join("messages.rs"), &keys)
+        .expect("Couldn't write messages!");
 }

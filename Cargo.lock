@@ -525,6 +525,7 @@ version = "0.1.0"
 dependencies = [
  "bindgen",
  "cordyceps",
+ "critical-section",
  "doxygen-bindgen",
  "doxygen-rs",
  "embassy-executor",
@@ -536,6 +537,7 @@ dependencies = [
  "futures",
  "heapless",
  "pin-init",
+ "portable-atomic",
  "ufmt",
 ]
 
@@ -623,6 +625,12 @@ name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
+
+[[package]]
+name = "portable-atomic"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
 
 [[package]]
 name = "prettyplease"

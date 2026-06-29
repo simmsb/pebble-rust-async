@@ -1,9 +1,4 @@
 { pkgs, lib, config, inputs, ... }:
-let
-  crate2nixTools = pkgs.callPackage "${inputs.crate2nix}/tools.nix" { };
-  cargoNix = path: crate: (pkgs.callPackage (crate2nixTools.generatedCargoNix { name = crate; src = path; }) { }).workspaceMembers.${crate}.build;
-  cargo-pebble = cargoNix inputs.cargo-pebble "pebble-cli";
-in
 {
   stdenv = pkgs.stdenvNoCC;
 
@@ -12,7 +7,6 @@ in
   ];
 
   packages = with pkgs; [
-    cargo-pebble
     cargo-show-asm
     cargo-bloat
     nodejs

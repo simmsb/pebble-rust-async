@@ -98,6 +98,7 @@ macro_rules! log {
 macro_rules! log {
     ($level:expr, $file:expr, $line:expr, $($arg:tt)*) => {
         {
+            ()
         }
     };
 }
@@ -122,14 +123,14 @@ macro_rules! error {
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_ERROR,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
             line!() as core::ffi::c_int,
-            $($arg)*,
+            $($arg)*
         )
     };
 }
 #[cfg(not(feature = "logging"))]
 #[macro_export]
 macro_rules! error {
-    ($($arg:tt)*) => {}
+    ($($arg:tt)*) => {()}
 }
 
 #[cfg(feature = "logging")]
@@ -140,14 +141,14 @@ macro_rules! warn {
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_WARNING,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
             line!() as core::ffi::c_int,
-            $($arg)*,
+            $($arg)*
         )
     };
 }
 #[cfg(not(feature = "logging"))]
 #[macro_export]
 macro_rules! warn {
-    ($($arg:tt)*) => {}
+    ($($arg:tt)*) => {()}
 }
 
 #[cfg(feature = "logging")]
@@ -158,14 +159,14 @@ macro_rules! info {
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_INFO,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
             line!() as core::ffi::c_int,
-            $($arg)*,
+            $($arg)*
         )
     };
 }
 #[cfg(not(feature = "logging"))]
 #[macro_export]
 macro_rules! info {
-    ($($arg:tt)*) => {}
+    ($($arg:tt)*) => {()}
 }
 
 #[cfg(feature = "logging")]
@@ -176,14 +177,14 @@ macro_rules! debug {
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_DEBUG,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
             line!() as core::ffi::c_int,
-            $($arg)*,
+            $($arg)*
         )
     };
 }
 #[cfg(not(feature = "logging"))]
 #[macro_export]
-macro_rules! info {
-    ($($arg:tt)*) => {}
+macro_rules! debug {
+    ($($arg:tt)*) => {()}
 }
 
 #[cfg(feature = "logging")]
@@ -194,12 +195,12 @@ macro_rules! trace {
             $crate::bindings::AppLogLevel::APP_LOG_LEVEL_DEBUG_VERBOSE,
             concat!(file!(), "\0").as_ptr() as *const core::ffi::c_char,
             line!() as core::ffi::c_int,
-            $($arg)*,
+            $($arg)*
         )
     };
 }
 #[cfg(not(feature = "logging"))]
 #[macro_export]
 macro_rules! trace {
-    ($($arg:tt)*) => {}
+    ($($arg:tt)*) => {()}
 }
